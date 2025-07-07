@@ -3,7 +3,6 @@ set -euo pipefail
 shopt -s nullglob
 
 # Abort any in-progress operations
-echo "Cleaning up in-progress Git operations..."
 git merge --abort 2>/dev/null || true
 git rebase --abort 2>/dev/null || true
 git am --abort 2>/dev/null || true
@@ -14,7 +13,7 @@ git fetch origin main
 git switch main
 git reset --hard origin/main
 
-# Apply patches if any
+# Apply patches
 patches=(patches/*.patch)
 if [ ${#patches[@]} -eq 0 ]; then
   echo "No patches to apply."
@@ -22,24 +21,41 @@ if [ ${#patches[@]} -eq 0 ]; then
 fi
 
 for p in "${patches[@]}"; do
-  echo "Applying patch: $p"
+  echo "Processing patch: $p"
+
+  # First try git am
   if git am --3way "$p"; then
-    echo "✅ Applied via git am: $p"
-  else
-    echo "⚠️ git am failed for $p, trying git apply..."
-    git am --abort || true
-    if git apply --index "$p"; then
-      commit_msg=$(sed -n 's/^Subject: //p' "$p" | head -n1)
-      git commit -m "$commit_msg"
-      echo "✅ Applied via git apply: $p"
-    else
-      echo "❌ Failed to apply patch $p"
-      exit 1
-    fi
+    echo "✅ git am success: $p"
+    continue
   fi
+
+  echo "⚠️ git am failed, aborting and trying git apply..."
+  git am --abort 2>/dev/null || true
+
+  # Try git apply with index
+  if git apply --index "$p"; then
+    subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+    git commit -m "$subject"
+    echo "✅ git apply --index success: $p"
+    continue
+  fi
+
+  echo "⚠️ git apply --index failed, trying patch fallback..."
+  # Fallback to patch -p1 with fuzz
+  if patch -p1 --fuzz=3 --verbose < "$p"; then
+    subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+    git add -A
+    git commit -m "$subject"
+    echo "✅ patch -p1 fallback success: $p"
+    continue
+  fi
+
+  echo "❌ All apply methods failed for patch: $p"
+  exit 1
 done
 
-# Push
+# Push changes
 echo "Pushing changes to origin/main..."
 git push origin main
-echo "✅ All patches applied and pushed."
+
+echo "✅ All patches applied and pushed successfully."
