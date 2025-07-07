@@ -31,8 +31,8 @@ for p in "${patches[@]}"; do
     target=${target#b/}
     echo "🔄 Replacing file $target from patch"
     git rm --ignore-unmatch "$target" || rm -f "$target"
-    # extract new content: skip header until blank line after diff header
-    sed -n '/^@@/,$' "$p" | sed '1d' | sed 's/^+//' > "$target"
+    # extract new content: get lines from the hunk onward, then strip the hunk header and '+' prefix
+    sed -n '/^@@ /,$p' "$p" | sed '1d' | sed 's/^+//' > "$target"
     git add "$target"
     git commit -m "$subject"
     echo "✅ Manual replace+commit for $target"
