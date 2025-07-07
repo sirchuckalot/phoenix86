@@ -23,6 +23,13 @@ fi
 for p in "${patch_array[@]}"; do
   echo "Processing patch: $p"
 
+  # If patch adds a new file, delete existing target first
+  if grep -q '^new file mode' "$p"; then
+    target=$(grep -m1 '^+++ b/' "$p" | cut -d' ' -f2)
+    echo "🔄 Removing existing $target before applying new file"
+    git rm --ignore-unmatch "$target" || rm -f "$target"
+  fi
+
   # Attempt git am
   if git am --3way "$p"; then
     echo "✅ git am success: $p"
@@ -50,7 +57,7 @@ for p in "${patch_array[@]}"; do
     continue
   fi
 
-  # Fallback to patch -p1
+  # Fallback patch -p1
   echo "🔄 Trying patch -p1 with fuzz..."
   if patch -p1 --fuzz=3 < "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
@@ -60,7 +67,7 @@ for p in "${patch_array[@]}"; do
     continue
   fi
 
-  # Fallback to patch -p0
+  # Fallback patch -p0
   echo "🔄 Trying patch -p0 with fuzz..."
   if patch -p0 --fuzz=3 < "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
