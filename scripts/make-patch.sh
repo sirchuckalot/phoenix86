@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s nullglob
 
 if [ $# -lt 1 ]; then
   echo "Usage: $0 \"Commit message for this patch\""
   exit 1
 fi
 
-# Ensure up-to-date
+echo "Fetching origin/main..."
 git fetch origin main
 git switch main
 
@@ -16,15 +17,11 @@ if git diff --cached --quiet; then
   exit 0
 fi
 
-# Stage everything
-git add -A
-
-# Create temp branch
+echo "Creating temporary branch..."
 tmp="tmp-patch-$(date +%s)"
-echo "Creating branch $tmp"
 git switch -c "$tmp"
 
-# Commit
+echo "Committing staged changes..."
 git commit -m "$*"
 
 # Generate patch
@@ -32,11 +29,11 @@ count=$(ls patches/*.patch 2>/dev/null | wc -l)
 next=$(printf "%04d" $((count+1)))
 safe=$(echo "$*" | tr ' /' '-')
 file="patches/${next}-${safe}.patch"
-echo "Writing patch to $file"
+echo "Generating patch file $file..."
 git format-patch origin/main --stdout > "$file"
+
+echo "Patch created: $file"
 
 # Cleanup
 git switch main
 git branch -D "$tmp"
-
-echo "Patch created: $file"
