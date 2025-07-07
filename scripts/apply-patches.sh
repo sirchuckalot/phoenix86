@@ -14,25 +14,35 @@ git switch main
 git reset --hard origin/main
 
 # Apply patches
-patches=(patches/*.patch)
-if [ ${#patches[@]} -eq 0 ]; then
+patch_array=(patches/*.patch)
+if [ ${#patch_array[@]} -eq 0 ]; then
   echo "No patches to apply."
   exit 0
 fi
 
-for p in "${patches[@]}"; do
+for p in "${patch_array[@]}"; do
   echo "Processing patch: $p"
 
-  # Try git am
+  # Attempt git am
   if git am --3way "$p"; then
     echo "✅ git am success: $p"
     continue
   fi
 
-  echo "⚠️ git am failed, aborting and trying git apply..."
+  echo "⚠️ git am failed, aborting..."
   git am --abort 2>/dev/null || true
 
-  # Try git apply --index
+  # Attempt git apply with index and 3way
+  echo "🔄 Trying git apply --3way..."
+  if git apply --index --3way "$p"; then
+    subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+    git commit -m "$subject"
+    echo "✅ git apply --index --3way success: $p"
+    continue
+  fi
+
+  # Attempt git apply with index
+  echo "🔄 Trying git apply --index..."
   if git apply --index "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
     git commit -m "$subject"
@@ -40,8 +50,9 @@ for p in "${patches[@]}"; do
     continue
   fi
 
-  echo "⚠️ git apply --index failed, trying patch -p1 with fuzz..."
-  if patch -p1 --fuzz=3 --verbose < "$p"; then
+  # Fallback to patch -p1
+  echo "🔄 Trying patch -p1 with fuzz..."
+  if patch -p1 --fuzz=3 < "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
     git add -A
     git commit -m "$subject"
@@ -49,8 +60,9 @@ for p in "${patches[@]}"; do
     continue
   fi
 
-  echo "⚠️ patch -p1 failed, trying patch -p0 with fuzz..."
-  if patch -p0 --fuzz=3 --verbose < "$p"; then
+  # Fallback to patch -p0
+  echo "🔄 Trying patch -p0 with fuzz..."
+  if patch -p0 --fuzz=3 < "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
     git add -A
     git commit -m "$subject"
@@ -62,8 +74,7 @@ for p in "${patches[@]}"; do
   exit 1
 done
 
-# Push changes
+# Push commits
 echo "Pushing changes to origin/main..."
 git push origin main
-
 echo "✅ All patches applied and pushed successfully."
