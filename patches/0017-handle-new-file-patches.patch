@@ -1,0 +1,63 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0017] Handle new-file only patches in apply-patches.sh
+
+diff --git a/scripts/apply-patches.sh b/scripts/apply-patches.sh
+index e3361e7..abcdef2 100755
+--- a/scripts/apply-patches.sh
++++ b/scripts/apply-patches.sh
+@@ -1,15 +1,21 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+ shopt -s nullglob
+
++apply_manual() {
++  local p="$1" subject target
++  subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
++  target=$(grep -m1 '^+++ b/' "$p" | cut -d' ' -f2)
++  target=${target#b/}
++  echo "🔄 Creating new file $target from patch"
++  git rm --ignore-unmatch "$target" || rm -f "$target"
++  sed -n '/^@@ /,$' "$p" | sed '1d' | sed 's/^+//' > "$target"
++  git add "$target"
++  git commit -m "$subject"
++  echo "✅ Manual create+commit for $target"
++}
+
+ # Abort any in-progress operations
+ git merge --abort 2>/dev/null || true
+ git rebase --abort 2>/dev/null || true
+ git am --abort 2>/dev/null || true
+
+@@ -40,15 +46,22 @@ for p in "${patches[@]}"; do
+   subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+
+   # Handle delete+new file scenario
+-  if grep -q '^deleted file mode' "$p" && grep -q '^new file mode' "$p"; then
+-    target=$(grep -m1 '^+++ b/' "$p" | cut -d' ' -f2)
+-    # strip leading b/ if present
+-    target=${target#b/}
+-    echo "🔄 Replacing file $target from patch"
+-    git rm --ignore-unmatch "$target" || rm -f "$target"
+-    # extract new content: get lines from the hunk onward, then strip the hunk header and '+' prefix
+-    sed -n '/^@@ /,$' "$p" | sed '1d' | sed 's/^+//' > "$target"
+-    git add "$target"
+-    git commit -m "$subject"
+-    echo "✅ Manual replace+commit for $target"
++  if grep -q '^deleted file mode' "$p" && grep -q '^new file mode' "$p"; then
++    apply_manual "$p"
++    continue
++  fi
++
++  # Handle new-file only scenario
++  if grep -q '^new file mode' "$p" && ! grep -q '^deleted file mode' "$p"; then
++    apply_manual "$p"
++    continue
+   fi
+
+   # Try git am
+   if git am --3way "$p"; then
+     echo "✅ git am success: $p"
++    continue
+   fi
+
+   echo "⚠️ git am failed, aborting..." 

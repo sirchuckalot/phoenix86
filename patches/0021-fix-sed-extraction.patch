@@ -1,0 +1,20 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0021] Fix sed range extraction in apply-patches.sh
+
+diff --git a/scripts/apply-patches.sh b/scripts/apply-patches.sh
+index 969a6cb..abcdef9 100755
+--- a/scripts/apply-patches.sh
++++ b/scripts/apply-patches.sh
+@@ -23,7 +23,7 @@ abort_inflight() {
+ apply_manual() {
+   local p="$1" subject target
+   subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+-  target=$(grep -m1 '^+++ b/' "$p" | cut -d' ' -f2)
++  target=$(grep -m1 '^+++ b/' "$p" | cut -d' ' -f2 | sed 's:^b/::')
+   echo "🔄 Creating new file $target from patch"
+   git rm --ignore-unmatch "$target" >/dev/null 2>&1 || rm -f "$target"
+-  sed -n '/^@@ /,$' "$p" | sed '1d' | sed 's/^+//' > "$target"
++  sed -n '/^@@ /,$p' "$p" | sed '1d' | sed 's/^+//' > "$target"
+   git add "$target"
+   git commit -m "$subject"
+   echo "✅ Manual create+commit for $target"

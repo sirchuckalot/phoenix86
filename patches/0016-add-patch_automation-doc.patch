@@ -1,0 +1,116 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0016] Add documentation for interactive patch workflow and scripts
+
+diff --git a/doc/patch_automation.md b/doc/patch_automation.md
+new file mode 100644
+index 0000000..abcdef1
+--- /dev/null
++++ b/doc/patch_automation.md
+@@ -0,0 +1,200 @@
++# Interactive Patch Workflow and Helper Scripts
++
++This document provides a self-contained guide for another ChatGPT session (or any user) to understand and reproduce the interactive scripting process used to generate, apply, and push patches in the Phoenix86 repository.
++
++## Overview
++
++We maintain a set of helper scripts under `scripts/` to automate patch creation and application:
++
++- **`scripts/make-patch.sh`**: Generates Git-format patches from staged changes.  
++- **`scripts/apply-patches.sh`**: Applies patches in the `patches/` directory to `main`, with multiple fallback strategies for malformed or delete+create patches, then pushes.
++
++All `.patch` files are stored in the `patches/` directory and are applied in numerical order.
++
++## Script Locations
++
++```
++phoenix86/
++├── doc/
++│   └── patch_automation.md     # <- This documentation file
++├── patches/
++│   ├── 0001-*.patch
++│   └── ...
++├── scripts/
++│   ├── make-patch.sh           # script to generate patches
++│   └── apply-patches.sh        # script to apply patches
++└── ...
++```
++
++## `make-patch.sh` Usage
++
++1. **Stage your changes**:
++
++   ```bash
++   git add <files>
++   ```
++
++2. **Generate a patch**:
++
++   ```bash
++   scripts/make-patch.sh "Meaningful commit message"
++   ```
++
++   This will:
++   - Create a temporary branch.  
++   - Commit staged changes under your message.  
++   - Generate `patches/000N-Your-message.patch` via `git format-patch origin/main --stdout`.
++   - Clean up the temporary branch.
++
++3. **Verify** the new patch appears in `patches/`.
++
++## `apply-patches.sh` Usage
++
++1. **Fetch and reset `main`**:
++
++   ```bash
++   git fetch origin main
++   git switch main
++   git reset --hard origin/main
++   git clean -fdx
++   ```
++
++2. **Run the apply script**:
++
++   ```bash
++   scripts/apply-patches.sh
++   ```
++
++   Steps performed internally:
++   - Aborts any in-progress merge/rebase/am.  
++   - Fetches and hard-resets `main` to `origin/main`.  
++   - Iterates each `patches/*.patch` file:
++     1. If the patch deletes and recreates a file, it:
++        - Deletes the existing file.  
++        - Extracts the new file content from the patch hunks.  
++        - Commits with the patch's `Subject:`.  
++     2. Otherwise, attempts in order:
++        - `git am --3way`.  
++        - `git apply --index --3way`.  
++        - `git apply --index`.  
++        - `patch -p1 --fuzz=3 --batch`.  
++        - `patch -p0 --fuzz=3 --batch`.  
++     3. On success, commits or continues.  
++   - After all patches, pushes `main` to `origin/main`.
++
++3. **Confirmation**: Look for `[PATCH ###]` commits on `main` and updated files.
++
++## Best Practices
++
++- **Do not hand-edit** downloads from ChatGPT. Always rely on `make-patch.sh` to generate correct patches.  
++- **Keep `patches/`** directory clean; remove obsolete patches before adding replacements.  
++- **Run `apply-patches.sh`** anytime you place new `.patch` files in `patches/`.
++
++## Example Workflow
++
++```bash
++# 1. Stage changes
++git add rtl/cpu/*.v doc/memory_map.md
++
++# 2. Generate patch
++scripts/make-patch.sh "Add memory map definitions"
++
++# 3. Apply & push
++scripts/apply-patches.sh
++```
++
++This workflow ensures a fully automated, error-resilient patch process.
++---

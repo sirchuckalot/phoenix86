@@ -1,0 +1,34 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0019] Skip already applied patches in apply-patches.sh
+
+diff --git a/scripts/apply-patches.sh b/scripts/apply-patches.sh
+index 640f582..2223334 100755
+--- a/scripts/apply-patches.sh
++++ b/scripts/apply-patches.sh
+@@ -25,7 +25,16 @@ for p in "${patches[@]}"; do
+   echo "Processing patch: $p"
+   subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+
+-  if git am --3way "$p"; then
++  if git am --3way "$p"; then
+     echo "✅ git am success: $p"
+     continue
+   fi
++  # If patch is already applied, skip it
++  if git apply --check "$p" 2>/dev/null; then
++    echo "✅ Patch already applied, skipping: $p"
++    git am --abort 2>/dev/null || true
++    continue
++  fi
++
+   echo "⚠️ git am failed, aborting..."
+   git am --abort 2>/dev/null || true
+
+@@ -40,6 +49,7 @@   if git apply --index --3way "$p"; then
+     echo "✅ git apply --index --3way success: $p"
+     continue
+   fi
++  # If patch changes no content, skip
+   echo "🔄 Trying git apply --index..."
+   if git apply --index "$p"; then
+     git commit -m "$subject"

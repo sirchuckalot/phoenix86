@@ -1,0 +1,32 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0018] Normalize patch files (dos2unix, strip BOM) before applying
+
+diff --git a/scripts/apply-patches.sh b/scripts/apply-patches.sh
+index abcdef2..1234567 100755
+--- a/scripts/apply-patches.sh
++++ b/scripts/apply-patches.sh
+@@ -20,6 +20,12 @@
+ patches=(patches/*.patch)
+ if [ ${#patches[@]} -eq 0 ]; then
+   echo "No patches to apply."
++  # Convert any downloaded patches to Unix format in case of CRLFs/BOMs
++  for p in "${patches[@]}"; do
++    echo "🔄 Normalizing patch file $p"
++    # strip Windows CR chars
++    sed -i 's/$//' "$p"
++    # strip BOM if present
++    sed -i '1s/^\xEF\xBB\xBF//' "$p"
++  done
++
+   exit 0
+ fi
+
+@@ -30,7 +36,7 @@ for p in "${patches[@]}"; do
+   echo "Processing patch: $p"
+   subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+
+-  # Handle delete+new file scenario
++  # Handle delete+new file scenario
+   if grep -q '^deleted file mode' "$p" && grep -q '^new file mode' "$p"; then
+     apply_manual "$p"
+     continue
