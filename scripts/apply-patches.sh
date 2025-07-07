@@ -23,7 +23,7 @@ fi
 for p in "${patches[@]}"; do
   echo "Processing patch: $p"
 
-  # First try git am
+  # Try git am
   if git am --3way "$p"; then
     echo "✅ git am success: $p"
     continue
@@ -32,7 +32,7 @@ for p in "${patches[@]}"; do
   echo "⚠️ git am failed, aborting and trying git apply..."
   git am --abort 2>/dev/null || true
 
-  # Try git apply with index
+  # Try git apply --index
   if git apply --index "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
     git commit -m "$subject"
@@ -40,13 +40,21 @@ for p in "${patches[@]}"; do
     continue
   fi
 
-  echo "⚠️ git apply --index failed, trying patch fallback..."
-  # Fallback to patch -p1 with fuzz
+  echo "⚠️ git apply --index failed, trying patch -p1 with fuzz..."
   if patch -p1 --fuzz=3 --verbose < "$p"; then
     subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
     git add -A
     git commit -m "$subject"
     echo "✅ patch -p1 fallback success: $p"
+    continue
+  fi
+
+  echo "⚠️ patch -p1 failed, trying patch -p0 with fuzz..."
+  if patch -p0 --fuzz=3 --verbose < "$p"; then
+    subject=$(grep -m1 '^Subject:' "$p" | sed 's/^Subject: //')
+    git add -A
+    git commit -m "$subject"
+    echo "✅ patch -p0 fallback success: $p"
     continue
   fi
 
