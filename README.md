@@ -1,12 +1,6 @@
-# Phoenix86 Project
+# Phoenix86 Microcoded 8086 PC System
 
-Phoenix86 is a clean-room implementation of an Intel 8086-compatible microcoded CPU core written in Verilog.
+## Overview
+This repo contains RTL, docs, and simulation for the Phoenix86 core.
 
-## Features
-- Fully open-source HDL core
-- Microcode-driven control unit
-- Instruction fetch pipeline with FIFO
-- Wishbone-compatible memory interface
-- Designed for PC emulation and SoC integration
-
-See `/doc` and `/src` for technical documentation and full CPU core structure.
+See \`Makefile\` and \`run_sim.sh\` for build instructions.

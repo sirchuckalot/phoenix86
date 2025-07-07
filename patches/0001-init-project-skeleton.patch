@@ -1,0 +1,264 @@
+From: ChatGPT <chatgpt@openai.com>
+Subject: [PATCH 0001] Initialize project skeleton
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,16 @@
++# Ignore build artifacts
++*.o
++*.hex
++*.uf2
++*.bin
++*.log
++*.fst
++*.vcd
++build/
++sim/build/
++fw/rp2040/build/
++
++# Editor files
++*.swp
++*.bak
++*~
++
++# Generated core files
++*.core
+
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,9 @@
++.PHONY: all sim clean
++
++all: sim
++
++sim:
++	./run_sim.sh
++
++clean:
++	rm -rf build sim/build waves
+
+diff --git a/run_sim.sh b/run_sim.sh
+new file mode 100755
+index 0000000..e69de29
+--- /dev/null
++++ b/run_sim.sh
+@@ -0,0 +1,7 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "Loading patches and building..."
++scripts/apply-patches.sh
++python3 scripts/assemble_uops.py
++fusesoc run --target=sim --tool=verilator phoenix86
+
+diff --git a/cores/phoenix86.core b/cores/phoenix86.core
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/cores/phoenix86.core
+@@ -0,0 +1,20 @@
++CAPI=2:
++
++name: phoenix86
++description: "Phoenix86 microcoded 8086 CPU + Wishbone system"
++
++filesets:
++  rtl:
++    files:
++      - rtl/cpu/*.v
++      - rtl/bus/*.v
++      - rtl/peripherals/**/*.v
++    file_type: verilogSource
++
++  sim:
++    files:
++      - sim/tb_system.sv
++      - sim/models/*.sv
++    file_type: verilogSource
++
++targets:
++  default:
++    filesets: [rtl]
++
++  sim:
++    depends: [default, sim]
++    top_module: tb_system
++    simulator: verilator
+
+diff --git a/doc/architecture_overview.md b/doc/architecture_overview.md
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/doc/architecture_overview.md
+@@ -0,0 +1,4 @@
++# Architecture Overview
++
++* TODO: Add block diagram and module descriptions *
+
+diff --git a/doc/memory_map.md b/doc/memory_map.md
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/doc/memory_map.md
+@@ -0,0 +1,4 @@
++# Memory Map
++
++* TODO: Define physical and logical address ranges *
+
+diff --git a/doc/io_map.md b/doc/io_map.md
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/doc/io_map.md
+@@ -0,0 +1,4 @@
++# I/O Map
++
++* TODO: List I/O-port assignments *
+
+diff --git a/doc/uop_encoding.md b/doc/uop_encoding.md
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/doc/uop_encoding.md
+@@ -0,0 +1,4 @@
++# Micro-op Encoding
++
++* TODO: Document microinstruction format *
+
+diff --git a/doc/x86_translation_table.md b/doc/x86_translation_table.md
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/doc/x86_translation_table.md
+@@ -0,0 +1,4 @@
++# x86 → μop Translation Table
++
++* TODO: Map each opcode *
+
+diff --git a/rtl/cpu/.gitkeep b/rtl/cpu/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/cpu/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/bus/.gitkeep b/rtl/bus/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/bus/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/peripherals/vga_text/.gitkeep b/rtl/peripherals/vga_text/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/peripherals/vga_text/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/peripherals/uart_16550/.gitkeep b/rtl/peripherals/uart_16550/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/peripherals/uart_16550/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/peripherals/pic8259/.gitkeep b/rtl/peripherals/pic8259/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/peripherals/pic8259/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/peripherals/pit8253/.gitkeep b/rtl/peripherals/pit8253/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/peripherals/pit8253/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/rtl/peripherals/sd_ide_emu/.gitkeep b/rtl/peripherals/sd_ide_emu/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/rtl/peripherals/sd_ide_emu/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/sim/models/.gitkeep b/sim/models/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/sim/models/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/sim/ci/.gitkeep b/sim/ci/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/sim/ci/.gitkeep
+@@ -0,0 +1 @@
++# placeholder file
+
+diff --git a/scripts/apply-patches.sh b/scripts/apply-patches.sh
+new file mode 100755
+index 0000000..e69de29
+--- /dev/null
++++ b/scripts/apply-patches.sh
+@@ -0,0 +1,10 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++# Fetch and reset local main
++git fetch origin main
++git switch main
++git reset --hard origin/main
++
++for p in patches/*.patch; do
++  echo "Applying $p"; git am --3way "$p"; done
+
+diff --git a/scripts/assemble_uops.py b/scripts/assemble_uops.py
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/scripts/assemble_uops.py
+@@ -0,0 +1,3 @@
++#!/usr/bin/env python3
++# Generate microcode ROM init file (TODO).
++pass
+
+diff --git a/scripts/convert_bios_hex.sh b/scripts/convert_bios_hex.sh
+new file mode 100755
+index 0000000..e69de29
+--- /dev/null
++++ b/scripts/convert_bios_hex.sh
+@@ -0,0 +1,5 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++xxd -p bios.bin > rtl/bus/bios.hex
+
+diff --git a/README.md b/README.md
+index e69de29..abcdef0 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,8 @@
+ # Phoenix86 Microcoded 8086 PC System
++
++## Overview
++This repo contains RTL, docs, and simulation for Phoenix86.
++
++See `Makefile` and `run_sim.sh`.

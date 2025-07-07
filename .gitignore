@@ -1,0 +1,19 @@
+# Ignore build artifacts
+*.o
+*.hex
+*.uf2
+*.bin
+*.log
+*.fst
+*.vcd
+build/
+sim/build/
+fw/rp2040/build/
+
+# Editor files
+*.swp
+*.bak
+*~
+
+# Generated core files
+*.core
